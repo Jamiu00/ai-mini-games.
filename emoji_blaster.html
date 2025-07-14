@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Emoji Blaster</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      font-family: "Segoe UI Emoji", sans-serif;
+      color: white;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background: #111;
+    }
+    #scoreDisplay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 20px;
+      color: white;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="scoreDisplay">Score: 0</div>
+  <canvas id="gameCanvas" width="360" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: canvas.width / 2 - 15, y: canvas.height - 60, width: 30, height: 30 };
+    let bullets = [];
+    let enemies = [];
+    let score = 0;
+    let gameOver = false;
+
+    const playerEmoji = "🚀";
+    const enemyEmoji = "👾";
+    const bulletEmoji = "💥";
+
+    function drawEmoji(emoji, x, y, size = 30) {
+      ctx.font = size + "px Segoe UI Emoji";
+      ctx.fillText(emoji, x, y + size);
+    }
+
+    function drawPlayer() {
+      drawEmoji(playerEmoji, player.x, player.y);
+    }
+
+    function drawBullets() {
+      bullets.forEach(b => drawEmoji(bulletEmoji, b.x, b.y, 20));
+    }
+
+    function drawEnemies() {
+      enemies.forEach(e => drawEmoji(enemyEmoji, e.x, e.y));
+    }
+
+    function moveBullets() {
+      bullets.forEach(b => b.y -= 6);
+      bullets = bullets.filter(b => b.y > 0);
+    }
+
+    function spawnEnemies() {
+      if (Math.random() < 0.025) {
+        enemies.push({ x: Math.random() * (canvas.width - 30), y: -30 });
+      }
+    }
+
+    function moveEnemies() {
+      enemies.forEach(e => e.y += 2);
+      enemies = enemies.filter(e => e.y < canvas.height);
+    }
+
+    function detectCollisions() {
+      bullets.forEach((b, bi) => {
+        enemies.forEach((e, ei) => {
+          if (b.x < e.x + 30 && b.x + 20 > e.x && b.y < e.y + 30 && b.y + 20 > e.y) {
+            bullets.splice(bi, 1);
+            enemies.splice(ei, 1);
+            score++;
+            document.getElementById("scoreDisplay").textContent = "Score: " + score;
+          }
+        });
+      });
+
+      enemies.forEach(e => {
+        if (e.y + 30 > player.y && e.x < player.x + player.width && e.x + 30 > player.x) {
+          gameOver = true;
+        }
+      });
+    }
+
+    function gameLoop() {
+      if (gameOver) {
+        ctx.fillStyle = "white";
+        ctx.font = "30px sans-serif";
+        ctx.fillText("Game Over!", 90, canvas.height / 2);
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPlayer();
+      drawBullets();
+      drawEnemies();
+
+      moveBullets();
+      spawnEnemies();
+      moveEnemies();
+      detectCollisions();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Controls
+    document.addEventListener("touchstart", e => {
+      const touchX = e.touches[0].clientX;
+      if (touchX < canvas.width / 2) {
+        player.x -= 20;
+      } else {
+        player.x += 20;
+      }
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.code === "ArrowLeft") player.x -= 20;
+      if (e.code === "ArrowRight") player.x += 20;
+      if (e.code === "Space") bullets.push({ x: player.x + player.width / 2 - 5, y: player.y });
+    });
+
+    document.addEventListener("click", () => {
+      bullets.push({ x: player.x + player.width / 2 - 5, y: player.y });
+    });
+
+    gameLoop();
+  </script>
+</body>
+</html>
